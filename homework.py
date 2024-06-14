@@ -37,18 +37,18 @@ handler.setFormatter(formatter)
 def check_tokens():
     """Проверяет токены для работы бота."""
     tokens = {
-        'PRACTICUM_TOKEN':  PRACTICUM_TOKEN,
-        'TELEGRAM_TOKEN':  TELEGRAM_TOKEN,
-        'TELEGRAM_CHAT_ID':  TELEGRAM_CHAT_ID,
+        'PRACTICUM_TOKEN': PRACTICUM_TOKEN,
+        'TELEGRAM_TOKEN': TELEGRAM_TOKEN,
+        'TELEGRAM_CHAT_ID': TELEGRAM_CHAT_ID,
     }
     for key, value in tokens.items():
         if not value:
             logger.critical(f'Отсутствуют токены для работы бота: {key}')
-            sys.exit() 
+            sys.exit()
 
 
 def send_message(bot, message):
-    """"Отправляет сообщение боту."""
+    """Отправляет сообщение боту."""
     try:
         bot.send_message(TELEGRAM_CHAT_ID, message)
         logger.debug(f'Успешно отправленно сообщение: {message}')
@@ -69,17 +69,18 @@ def get_api_answer(timestamp):
 
     return response.json()
 
+
 def check_response(response):
     """Проверяет ответ API."""
     if not isinstance(response, dict):
         raise TypeError('Ответ API должен быть словарем')
-    
+
     if 'homeworks' not in response:
         raise KeyError('Ответ API не содержит ключ "homeworks"')
-    
+
     if 'current_date' not in response:
         raise KeyError('Ответ API не содержит ключ "current_date"')
-    
+
     if not isinstance(response['homeworks'], list):
         raise TypeError('Значение "homeworks" должно быть списком')
 
@@ -94,20 +95,19 @@ def parse_status(homework):
 
     if 'status' not in homework:
         raise KeyError('В ответе API отсутствует ключ "status"')
-    
+
     homework_name = homework['homework_name']
     status = homework['status']
-    
+
     if status not in HOMEWORK_VERDICTS:
-        raise ValueError(f'Недокументированный статус домашней работы: {status}')
-    
+        raise ValueError(f'Неизвестный статус домашней работы: {status}')
+
     verdict = HOMEWORK_VERDICTS[status]
     return f'Изменился статус проверки работы "{homework_name}". {verdict}'
 
 
 def main():
     """Основная логика работы бота."""
-
     check_tokens()
     bot = telebot.TeleBot(token=TELEGRAM_TOKEN)
     timestamp = int(time.time())
