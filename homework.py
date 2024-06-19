@@ -34,6 +34,18 @@ formatter = logging.Formatter(
 handler.setFormatter(formatter)
 
 
+class APIRequestError(Exception):
+    """Исключение для ошибок при выполнении запроса к API."""
+
+    pass
+
+
+class JSONParsingError(Exception):
+    """Исключение для ошибок при парсинге JSON ответа."""
+
+    pass
+
+
 def check_tokens():
     """Проверяет токены для работы бота."""
     tokens = {
@@ -68,14 +80,14 @@ def get_api_answer(timestamp):
         response = requests.get(url=ENDPOINT, headers=HEADERS, params=payload)
     except requests.exceptions.RequestException as error:
         logger.error(f'Ошибка запроса к API: {error}, параметры: {payload}')
-        return None
+        raise APIRequestError(error)
     if response.status_code != requests.codes.ok:
         raise requests.HTTPError(f'Вернулся HTTP-код: {response.status_code}')
     try:
         return response.json()
     except ValueError as error:
         logging.error(f'Ошибка парсинга JSON: {error}')
-        return None
+        raise JSONParsingError(error)
 
 
 def check_response(response):
@@ -122,6 +134,7 @@ def main():
     check_tokens()
     bot = telebot.TeleBot(token=TELEGRAM_TOKEN)
     timestamp = int(time.time())
+    error_sent = False
 
     while True:
         try:
@@ -135,9 +148,13 @@ def main():
             else:
                 logger.info('Новых статусов нет.')
             timestamp = response.get('current_date')
+            error_sent = False
         except Exception as error:
             message = f'Сбой в работе программы: {error}'
             logger.error(message)
+            if not error_sent:
+                send_message(bot, message)
+                error_sent = True
         time.sleep(RETRY_PERIOD)
 
 
