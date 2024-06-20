@@ -79,15 +79,13 @@ def get_api_answer(timestamp):
     try:
         response = requests.get(url=ENDPOINT, headers=HEADERS, params=payload)
     except requests.exceptions.RequestException as error:
-        logger.error(f'Ошибка запроса к API: {error}, параметры: {payload}')
-        raise APIRequestError(error)
+        raise APIRequestError(f'Ошибка API: {error}, параметры: {payload}')
     if response.status_code != requests.codes.ok:
         raise requests.HTTPError(f'Вернулся HTTP-код: {response.status_code}')
     try:
         return response.json()
     except ValueError as error:
-        logging.error(f'Ошибка парсинга JSON: {error}')
-        raise JSONParsingError(error)
+        raise JSONParsingError(f'Ошибка парсинга JSON: {error}')
 
 
 def check_response(response):
@@ -134,7 +132,7 @@ def main():
     check_tokens()
     bot = telebot.TeleBot(token=TELEGRAM_TOKEN)
     timestamp = int(time.time())
-    error_sent = False
+    last_error_message = None
 
     while True:
         try:
@@ -148,13 +146,13 @@ def main():
             else:
                 logger.info('Новых статусов нет.')
             timestamp = response.get('current_date')
-            error_sent = False
+            last_error_message = None
         except Exception as error:
             message = f'Сбой в работе программы: {error}'
             logger.error(message)
-            if not error_sent:
+            if message != last_error_message:
                 send_message(bot, message)
-                error_sent = True
+                last_error_message = message
         time.sleep(RETRY_PERIOD)
 
 
